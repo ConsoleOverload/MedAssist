@@ -31,10 +31,12 @@ export const PatientAppointments = () => {
         appointmentApi.list(),
         doctorApi.list(),
       ]);
-      setAppointments(aptList || []);
-      setDoctors(docList || []);
-      if (docList?.length > 0 && !selectedDoctorId) {
-        setSelectedDoctorId(docList[0]._id);
+      const validApt = Array.isArray(aptList) ? aptList.filter(Boolean) : [];
+      const validDocs = Array.isArray(docList) ? docList.filter(Boolean) : [];
+      setAppointments(validApt);
+      setDoctors(validDocs);
+      if (validDocs[0]?._id && !selectedDoctorId) {
+        setSelectedDoctorId(validDocs[0]._id);
       }
     } catch (err) {
       console.error(err);
@@ -211,9 +213,9 @@ export const PatientAppointments = () => {
             label="Select Physician"
             value={selectedDoctorId}
             onChange={(e) => setSelectedDoctorId(e.target.value)}
-            options={doctors.map((d) => ({
+            options={doctors.filter(Boolean).map((d) => ({
               value: d._id,
-              label: `${d.userId?.name} (${d.departmentId?.name}) - $${d.consultationFee}`,
+              label: `${d.userId?.name || 'Dr.'} (${d.departmentId?.name || 'Clinic'}) - $${d.consultationFee || 0}`,
             }))}
             required
           />

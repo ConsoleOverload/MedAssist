@@ -41,13 +41,17 @@ export const AppointmentBooking = () => {
           adminApi.listServices(),
         ]);
 
-        setPatients(patientList || []);
-        setDoctors(doctorList || []);
-        setServices(serviceList || []);
+        const validPatients = Array.isArray(patientList) ? patientList.filter(Boolean) : [];
+        const validDoctors = Array.isArray(doctorList) ? doctorList.filter(Boolean) : [];
+        const validServices = Array.isArray(serviceList) ? serviceList.filter(Boolean) : [];
 
-        if (patientList?.length > 0) setSelectedPatientId(patientList[0]._id);
-        if (doctorList?.length > 0) setSelectedDoctorId(doctorList[0]._id);
-        if (serviceList?.length > 0) setSelectedServiceId(serviceList[0]._id);
+        setPatients(validPatients);
+        setDoctors(validDoctors);
+        setServices(validServices);
+
+        if (validPatients[0]?._id) setSelectedPatientId(validPatients[0]._id);
+        if (validDoctors[0]?._id) setSelectedDoctorId(validDoctors[0]._id);
+        if (validServices[0]?._id) setSelectedServiceId(validServices[0]._id);
       } catch (err) {
         console.error(err);
       }
@@ -142,9 +146,9 @@ export const AppointmentBooking = () => {
               label="Select Patient"
               value={selectedPatientId}
               onChange={(e) => setSelectedPatientId(e.target.value)}
-              options={patients.map((p) => ({
+              options={patients.filter(Boolean).map((p) => ({
                 value: p._id,
-                label: `${p.firstName} ${p.lastName} (${p.mrn}) - ${p.phone}`,
+                label: `${p.firstName || ''} ${p.lastName || ''} (${p.mrn || 'N/A'}) - ${p.phone || ''}`,
               }))}
               required
             />
@@ -154,9 +158,9 @@ export const AppointmentBooking = () => {
               label="Select Attending Physician"
               value={selectedDoctorId}
               onChange={(e) => setSelectedDoctorId(e.target.value)}
-              options={doctors.map((d) => ({
+              options={doctors.filter(Boolean).map((d) => ({
                 value: d._id,
-                label: `${d.userId?.name || 'Dr.'} (${d.departmentId?.name || 'Medicine'}) - $${d.consultationFee}`,
+                label: `${d.userId?.name || 'Dr.'} (${d.departmentId?.name || 'Medicine'}) - $${d.consultationFee || 0}`,
               }))}
               required
             />
@@ -175,9 +179,9 @@ export const AppointmentBooking = () => {
               label="Clinic Service"
               value={selectedServiceId}
               onChange={(e) => setSelectedServiceId(e.target.value)}
-              options={services.map((s) => ({
+              options={services.filter(Boolean).map((s) => ({
                 value: s._id,
-                label: `${s.name} ($${s.fee})`,
+                label: `${s.name || 'Service'} ($${s.fee || 0})`,
               }))}
             />
 

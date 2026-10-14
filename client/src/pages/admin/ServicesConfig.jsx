@@ -38,10 +38,12 @@ export const ServicesConfig = () => {
         adminApi.listDepartments(),
         adminApi.listServices(),
       ]);
-      setDepartments(deptList || []);
-      setServices(serviceList || []);
-      if (deptList?.length > 0 && !serviceForm.departmentId) {
-        setServiceForm((s) => ({ ...s, departmentId: deptList[0]._id }));
+      const validDepts = Array.isArray(deptList) ? deptList.filter(Boolean) : [];
+      const validSvcs = Array.isArray(serviceList) ? serviceList.filter(Boolean) : [];
+      setDepartments(validDepts);
+      setServices(validSvcs);
+      if (validDepts[0]?._id && !serviceForm.departmentId) {
+        setServiceForm((s) => ({ ...s, departmentId: validDepts[0]._id }));
       }
     } catch (err) {
       console.error(err);
@@ -269,7 +271,7 @@ export const ServicesConfig = () => {
               label="Department"
               value={serviceForm.departmentId}
               onChange={(e) => setServiceForm({ ...serviceForm, departmentId: e.target.value })}
-              options={departments.map((d) => ({ value: d._id, label: d.name }))}
+              options={departments.filter(Boolean).map((d) => ({ value: d._id, label: d.name || 'Department' }))}
               required
             />
           </div>

@@ -164,6 +164,7 @@ export const ClinicalEncounterConsole = () => {
 
   // Finalize and sign clinical note
   const handleFinalize = async () => {
+    if (!encounter?._id) return;
     if (!window.confirm('Finalize and sign this clinical note? This will commit the medical document.')) {
       return;
     }
@@ -188,6 +189,7 @@ export const ClinicalEncounterConsole = () => {
 
   // Feature A: Generate AI Summary
   const handleGenerateAISummary = async () => {
+    if (!encounter?._id) return;
     try {
       setGeneratingAI(true);
       // Save current notes first
@@ -198,8 +200,8 @@ export const ClinicalEncounterConsole = () => {
         diagnoses,
       });
       const res = await encounterApi.generateAISummary(encounter._id);
-      setAiSummaryText(res.generatedText || '');
-      setAiSummaryStatus(res.status || 'unapproved_draft');
+      setAiSummaryText(res?.generatedText || '');
+      setAiSummaryStatus(res?.status || 'unapproved_draft');
     } catch (err) {
       alert(err.message || 'Failed to generate AI summary');
     } finally {
@@ -209,10 +211,11 @@ export const ClinicalEncounterConsole = () => {
 
   // Approve AI Summary
   const handleApproveAISummary = async () => {
+    if (!encounter?._id) return;
     try {
       setSaving(true);
       const res = await encounterApi.approveAISummary(encounter._id, aiSummaryText);
-      setAiSummaryStatus(res.status);
+      setAiSummaryStatus(res?.status || 'approved');
       alert('AI summary officially approved and incorporated into clinical record.');
     } catch (err) {
       alert(err.message || 'Failed to approve');
@@ -224,10 +227,16 @@ export const ClinicalEncounterConsole = () => {
   // Issue Prescription
   const handleCreatePrescription = async (e) => {
     e.preventDefault();
+    if (!encounter?._id) return;
+    const targetPatientId = encounter.patientId?._id || encounter.patientId;
+    if (!targetPatientId) {
+      alert('Patient reference missing from encounter');
+      return;
+    }
     try {
       await prescriptionApi.create({
         encounterId: encounter._id,
-        patientId: encounter.patientId._id,
+        patientId: targetPatientId,
         medications: rxMeds.filter((m) => m.name),
         generalInstructions: rxInstructions,
       });
@@ -241,10 +250,16 @@ export const ClinicalEncounterConsole = () => {
   // Order Lab Test
   const handleCreateLabOrder = async (e) => {
     e.preventDefault();
+    if (!encounter?._id) return;
+    const targetPatientId = encounter.patientId?._id || encounter.patientId;
+    if (!targetPatientId) {
+      alert('Patient reference missing from encounter');
+      return;
+    }
     try {
       await labApi.createOrder({
         encounterId: encounter._id,
-        patientId: encounter.patientId._id,
+        patientId: targetPatientId,
         ...labForm,
       });
       setLabModalOpen(false);

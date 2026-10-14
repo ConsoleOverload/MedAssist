@@ -42,10 +42,12 @@ export const BillingManagement = () => {
         billingApi.listInvoices(),
         patientApi.list('limit=100'),
       ]);
-      setInvoices(invList || []);
-      setPatients(patientList || []);
-      if (patientList?.length > 0 && !selectedPatientId) {
-        setSelectedPatientId(patientList[0]._id);
+      const validInvoices = Array.isArray(invList) ? invList.filter(Boolean) : [];
+      const validPatients = Array.isArray(patientList) ? patientList.filter(Boolean) : [];
+      setInvoices(validInvoices);
+      setPatients(validPatients);
+      if (validPatients[0]?._id && !selectedPatientId) {
+        setSelectedPatientId(validPatients[0]._id);
       }
     } catch (err) {
       console.error(err);
@@ -230,9 +232,9 @@ export const BillingManagement = () => {
             label="Billed Patient"
             value={selectedPatientId}
             onChange={(e) => setSelectedPatientId(e.target.value)}
-            options={patients.map((p) => ({
+            options={patients.filter(Boolean).map((p) => ({
               value: p._id,
-              label: `${p.firstName} ${p.lastName} (${p.mrn})`,
+              label: `${p.firstName || ''} ${p.lastName || ''} (${p.mrn || 'N/A'})`,
             }))}
             required
           />

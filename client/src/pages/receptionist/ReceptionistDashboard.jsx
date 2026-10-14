@@ -144,7 +144,8 @@ export const ReceptionistDashboard = () => {
                   </td>
                 </tr>
               ) : (
-                waitingQueue.map((apt) => {
+                (waitingQueue || []).filter(Boolean).map((apt) => {
+                  if (!apt?._id) return null;
                   const p = apt.patientId || {};
                   return (
                     <tr key={apt._id} className="hover:bg-slate-50/60">

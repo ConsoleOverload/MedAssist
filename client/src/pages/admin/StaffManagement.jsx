@@ -44,10 +44,12 @@ export const StaffManagement = () => {
         adminApi.listDepartments(),
       ]);
 
-      setUsers(usersData || []);
-      setDepartments(deptsData || []);
-      if (deptsData?.length > 0 && !form.departmentId) {
-        setForm((f) => ({ ...f, departmentId: deptsData[0]._id }));
+      const validUsers = Array.isArray(usersData) ? usersData.filter(Boolean) : [];
+      const validDepts = Array.isArray(deptsData) ? deptsData.filter(Boolean) : [];
+      setUsers(validUsers);
+      setDepartments(validDepts);
+      if (validDepts[0]?._id && !form.departmentId) {
+        setForm((f) => ({ ...f, departmentId: validDepts[0]._id }));
       }
     } catch (err) {
       console.error('Failed to load users:', err);
@@ -312,7 +314,7 @@ export const StaffManagement = () => {
                   label="Department"
                   value={form.departmentId}
                   onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
-                  options={departments.map((d) => ({ value: d._id, label: d.name }))}
+                  options={departments.filter(Boolean).map((d) => ({ value: d._id, label: d.name || 'Department' }))}
                   required
                 />
                 <Input
