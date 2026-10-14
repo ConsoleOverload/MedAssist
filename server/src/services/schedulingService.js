@@ -31,17 +31,20 @@ export const getAvailableSlots = async (doctorId, dateStr) => {
   const { startOfDay, endOfDay, dayOfWeek } = getDayDateRange(dateStr);
 
   // 1. Fetch Doctor's availability configuration for this day of week
-  const availability = await DoctorAvailability.findOne({
+  let availability = await DoctorAvailability.findOne({
     doctorId,
     dayOfWeek,
     isAvailable: true,
   });
 
   if (!availability) {
-    return {
-      isAvailable: false,
-      message: 'Doctor is not scheduled to work on this day',
-      slots: [],
+    // Fallback to standard clinic working hours 08:00 - 18:00
+    availability = {
+      startTime: '08:00',
+      endTime: '18:00',
+      slotDurationMinutes: 30,
+      breakStartTime: '13:00',
+      breakEndTime: '14:00',
     };
   }
 
@@ -103,14 +106,18 @@ export const validateSlotAvailability = async (doctorId, dateStr, startTime, exc
   const { startOfDay, endOfDay, dayOfWeek } = getDayDateRange(dateStr);
 
   // Check working schedule
-  const availability = await DoctorAvailability.findOne({
+  let availability = await DoctorAvailability.findOne({
     doctorId,
     dayOfWeek,
     isAvailable: true,
   });
 
   if (!availability) {
-    throw new Error('Doctor has no active schedule on this day of the week');
+    availability = {
+      startTime: '08:00',
+      endTime: '20:00',
+      slotDurationMinutes: 30,
+    };
   }
 
   const slotMins = timeToMinutes(startTime);

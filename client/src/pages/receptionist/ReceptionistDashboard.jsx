@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { dashboardApi, appointmentApi } from '../../api/index.js';
+import { dashboardApi, appointmentApi, patientApi, doctorApi } from '../../api/index.js';
 import { Card } from '../../components/common/Card.jsx';
 import { Badge } from '../../components/common/Badge.jsx';
 import { Button } from '../../components/common/Button.jsx';
@@ -13,11 +13,21 @@ import {
   UserPlus,
   CheckCircle,
   RefreshCw,
+  Zap,
+  ArrowRight,
+  UserCheck,
 } from 'lucide-react';
 
 export const ReceptionistDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [quickPatientId, setQuickPatientId] = useState('');
+  const [quickDoctorId, setQuickDoctorId] = useState('');
+  const [quickReason, setQuickReason] = useState('General Consultation');
+  const [quickBooking, setQuickBooking] = useState(false);
+  const [quickSuccess, setQuickSuccess] = useState('');
 
   const fetchStats = async () => {
     try {
@@ -31,11 +41,57 @@ export const ReceptionistDashboard = () => {
     }
   };
 
+  const loadDropdowns = async () => {
+    try {
+      const [pts, docs] = await Promise.all([
+        patientApi.list('limit=100'),
+        doctorApi.list(),
+      ]);
+      const validPts = Array.isArray(pts) ? pts.filter(Boolean) : [];
+      const validDocs = Array.isArray(docs) ? docs.filter(Boolean) : [];
+      setPatients(validPts);
+      setDoctors(validDocs);
+      if (validPts.length > 0) setQuickPatientId(validPts[0]._id);
+      if (validDocs.length > 0) setQuickDoctorId(validDocs[0]._id);
+    } catch (err) {
+      console.error('Failed to load quick dropdowns', err);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
+    loadDropdowns();
     const interval = setInterval(fetchStats, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleQuickCheckIn = async (e) => {
+    e.preventDefault();
+    if (!quickPatientId || !quickDoctorId) {
+      alert('Please select a patient and a physician');
+      return;
+    }
+
+    try {
+      setQuickBooking(true);
+      const today = new Date().toISOString().slice(0, 10);
+      await appointmentApi.book({
+        patientId: quickPatientId,
+        doctorId: quickDoctorId,
+        appointmentDate: today,
+        reason: quickReason || 'General Consultation',
+        status: 'arrived',
+      });
+
+      setQuickSuccess('Patient booked & checked in! Transferred to Doctor waiting room.');
+      fetchStats();
+      setTimeout(() => setQuickSuccess(''), 5000);
+    } catch (err) {
+      alert(err.message || 'Check-in failed');
+    } finally {
+      setQuickBooking(false);
+    }
+  };
 
   const handleUpdateStatus = async (id, status) => {
     try {
@@ -55,21 +111,94 @@ export const ReceptionistDashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">Reception & Patient Intake Desk</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Patient check-in, appointment scheduling, and waiting room queue flow</p>
+          <p className="text-xs text-slate-500 mt-0.5">Quick patient check-in, doctor assignment & live waiting room flow</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/receptionist/booking">
-            <Button variant="primary" size="sm" icon={Calendar}>
-              Book Appointment
+            <Button variant="outline" size="sm" icon={Calendar}>
+              Advanced Calendar
             </Button>
           </Link>
           <Link to="/receptionist/patients/new">
             <Button variant="outline" size="sm" icon={UserPlus}>
-              Register Patient
+              Register New Patient
             </Button>
           </Link>
         </div>
       </div>
+
+      {/* 1-Click Fast-Track Check-In Card */}
+      <Card className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 text-white border-0 shadow-lg p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-400 text-slate-950 uppercase tracking-wider flex items-center gap-1">
+                <Zap className="w-3 h-3" /> Quick Flow
+              </span>
+              <h3 className="text-base font-bold text-white">1-Click Patient Check-In & Doctor Assignment</h3>
+            </div>
+            <p className="text-xs text-slate-300 mt-1">
+              Select a patient and doctor to instantly book, assign a queue token, and alert the doctor.
+            </p>
+          </div>
+
+          <form onSubmit={handleQuickCheckIn} className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            <select
+              value={quickPatientId}
+              onChange={(e) => setQuickPatientId(e.target.value)}
+              className="text-xs bg-slate-800/90 text-white border border-slate-700 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-teal-400 outline-none max-w-[200px]"
+              required
+            >
+              <option value="">-- Choose Patient --</option>
+              {patients.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.firstName} {p.lastName} ({p.mrn})
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={quickDoctorId}
+              onChange={(e) => setQuickDoctorId(e.target.value)}
+              className="text-xs bg-slate-800/90 text-white border border-slate-700 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-teal-400 outline-none max-w-[220px]"
+              required
+            >
+              <option value="">-- Choose Doctor --</option>
+              {doctors.map((d) => (
+                <option key={d._id} value={d._id}>
+                  Dr. {d.userId?.name || 'Physician'} ({d.departmentId?.name || 'Medicine'})
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              value={quickReason}
+              onChange={(e) => setQuickReason(e.target.value)}
+              placeholder="Reason for visit"
+              className="text-xs bg-slate-800/90 text-white border border-slate-700 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-teal-400 outline-none w-36"
+            />
+
+            <Button
+              variant="primary"
+              size="md"
+              type="submit"
+              icon={UserCheck}
+              isLoading={quickBooking}
+              className="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold"
+            >
+              Check In Patient
+            </Button>
+          </form>
+        </div>
+
+        {quickSuccess && (
+          <div className="mt-3 p-2.5 rounded-lg bg-teal-500/20 border border-teal-400/40 text-teal-200 text-xs flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 shrink-0 text-teal-300" />
+            <span>{quickSuccess}</span>
+          </div>
+        )}
+      </Card>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

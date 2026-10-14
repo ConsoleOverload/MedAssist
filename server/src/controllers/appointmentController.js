@@ -79,12 +79,38 @@ export const bookAppointment = async (req, res, next) => {
       targetPatientId = req.user.patientId;
     }
 
-    if (!doctorId || !targetPatientId || !appointmentDate || !startTime) {
-      return sendError(res, 'Doctor, patient, appointment date, and start time are required.', 400);
+    if (!doctorId || !targetPatientId || !appointmentDate) {
+      return sendError(res, 'Doctor, patient, and appointment date are required.', 400);
     }
 
-    // Server-side atomic slot conflict check
-    const { endTime } = await validateSlotAvailability(doctorId, appointmentDate, startTime);
+    let appointmentStartTime = startTime || '09:00';
+    let appointmentEndTime = '09:30';
+
+    try {
+      const { endTime } = await validateSlotAvailability(doctorId, appointmentDate, appointmentStartTime);
+      appointmentEndTime = endTime;
+    } catch (slotErr) {
+      // If walk-in check-in or no slot selected, dynamically pick the next available working slot
+      if (req.body.status === 'arrived' || !startTime) {
+        const { startOfDay, endOfDay } = getDayDateRange(appointmentDate);
+        const existingAppts = await Appointment.find({
+          doctorId,
+          appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+          status: { $in: ['booked', 'arrived', 'in-consultation'] },
+        }).select('startTime');
+
+        const booked = new Set(existingAppts.map((a) => a.startTime));
+        const candidateSlots = [
+          '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+          '12:00', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
+        ];
+        const nextFree = candidateSlots.find((s) => !booked.has(s)) || '18:00';
+        appointmentStartTime = nextFree;
+        appointmentEndTime = `${parseInt(nextFree.split(':')[0], 10)}:45`;
+      } else {
+        throw slotErr;
+      }
+    }
 
     const doctor = await Doctor.findById(doctorId).populate('userId', 'name');
     const patient = await Patient.findById(targetPatientId);
@@ -110,11 +136,11 @@ export const bookAppointment = async (req, res, next) => {
       departmentId: departmentId || doctor.departmentId,
       serviceId,
       appointmentDate: new Date(appointmentDate),
-      startTime,
-      endTime,
+      startTime: appointmentStartTime,
+      endTime: appointmentEndTime,
       reason: reason || 'Consultation',
-      notes: notes || '',
-      status: 'booked',
+      status: req.body.status === 'arrived' ? 'arrived' : 'booked',
+      checkInTime: req.body.status === 'arrived' ? new Date() : undefined,
       bookedBy: req.user.userId,
     });
 
