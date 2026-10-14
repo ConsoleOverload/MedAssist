@@ -54,6 +54,14 @@ export const createApp = () => {
   // Logging & Tracing
   app.use(requestLogger);
 
+  // Normalize duplicate or multiple consecutive slashes in URL path (e.g., //auth/register -> /auth/register)
+  app.use((req, res, next) => {
+    if (req.url && req.url.includes('//')) {
+      req.url = req.url.replace(/\/+/g, '/');
+    }
+    next();
+  });
+
   // Root & Health
   app.get('/', (req, res) => {
     res.json({
@@ -63,9 +71,10 @@ export const createApp = () => {
     });
   });
 
-  // Mount API
+  // Mount API (versioned and root fallbacks)
   app.use('/api/v1', apiRouter);
   app.use('/api', apiRouter);
+  app.use('/', apiRouter);
 
   // Serve static production build of client SPA
   if (ENV.NODE_ENV === 'production') {

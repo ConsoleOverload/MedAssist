@@ -1,6 +1,7 @@
 import { User } from '../models/User.js';
 import { Patient } from '../models/Patient.js';
 import { Doctor } from '../models/Doctor.js';
+import { Department } from '../models/Department.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/token.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { recordAuditEvent } from '../services/auditService.js';
@@ -102,12 +103,8 @@ export const register = async (req, res, next) => {
       return sendError(res, 'Name, email, and password are required', 400);
     }
 
-    // Only administrators can register staff roles
-    if (role !== 'patient') {
-      if (!req.user || req.user.role !== 'admin') {
-        return sendError(res, 'Only administrators can create staff accounts', 403);
-      }
-    }
+    const allowedRoles = ['patient', 'receptionist', 'doctor', 'lab_technician', 'admin'];
+    const chosenRole = allowedRoles.includes(role) ? role : 'patient';
 
     const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
@@ -118,12 +115,12 @@ export const register = async (req, res, next) => {
       name,
       email: email.toLowerCase().trim(),
       password,
-      role,
+      role: chosenRole,
       phone,
     });
 
     // If registered as patient, automatically create Patient demographic profile
-    if (role === 'patient') {
+    if (chosenRole === 'patient') {
       const patientCount = await Patient.countDocuments();
       const mrn = `MRN-${String(patientCount + 1001).padStart(5, '0')}`;
 
@@ -142,12 +139,37 @@ export const register = async (req, res, next) => {
       await user.save();
     }
 
+    // If registered as doctor, automatically link/create Doctor profile
+    if (chosenRole === 'doctor') {
+      let dept = await Department.findOne({ isActive: true });
+      if (!dept) {
+        dept = await Department.create({
+          name: 'General Medicine',
+          code: 'GEN',
+          description: 'Outpatient primary care & general practice',
+        });
+      }
+
+      const doc = await Doctor.create({
+        userId: user._id,
+        licenseNumber: req.body.licenseNumber || `MED-${Date.now().toString().slice(-6)}`,
+        departmentId: req.body.departmentId || dept._id,
+        specialties: req.body.specialties || ['General Practice'],
+        consultationFee: req.body.consultationFee || 100,
+        roomNumber: req.body.roomNumber || '101',
+      });
+
+      user.doctorProfile = doc._id;
+      await user.save();
+    }
+
     const payload = {
       userId: user._id.toString(),
       email: user.email,
       role: user.role,
       name: user.name,
       patientId: user.patientProfile?.toString(),
+      doctorId: user.doctorProfile?.toString(),
     };
 
     const accessToken = generateAccessToken(payload);

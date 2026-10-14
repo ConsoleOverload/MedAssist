@@ -1,4 +1,21 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+// Clean and normalize API base URL
+const getBaseUrl = () => {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || '').trim();
+  if (!envUrl) {
+    return '/api/v1';
+  }
+  // Strip trailing slashes
+  let sanitized = envUrl.replace(/\/+$/, '');
+
+  // If user provided origin only without API path (e.g. https://xyz.onrender.com),
+  // automatically ensure it points to the API route prefix /api/v1
+  if (!sanitized.endsWith('/api/v1') && !sanitized.endsWith('/api')) {
+    sanitized = `${sanitized}/api/v1`;
+  }
+  return sanitized;
+};
+
+const BASE_URL = getBaseUrl();
 
 export async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem('medassist_token');
@@ -14,7 +31,11 @@ export async function apiRequest(endpoint, options = {}) {
     headers,
   };
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, config);
+  // Ensure clean single slash join and collapse any duplicate slashes (preserving protocol https:// or http://)
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${BASE_URL}${cleanEndpoint}`.replace(/([^:]\/)\/+/g, '$1');
+
+  const response = await fetch(fullUrl, config);
 
   if (response.status === 401) {
     // If unauthorized, clear token and notify auth state
