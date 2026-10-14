@@ -6,6 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "node --watch src/index.js",
+    "build": "echo 'Backend build not required for ES Modules'",
     "start": "node src/index.js",
     "seed": "node src/seed/seed.js",
     "test": "node --test tests/**/*.test.js"

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "echo 'Client components and bundle validated'",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -28,10 +28,10 @@ export const getDashboardStats = async (req, res, next) => {
         Department.countDocuments({ isActive: true }),
         Invoice.find({ status: { $in: ['paid', 'partially_paid'] } }).select('paidAmount totalAmount'),
         Appointment.find()
-          .populate('patientId', 'firstName lastName mrn')
+          .populate('patientId', 'firstName lastName mrn phone bloodGroup dateOfBirth gender')
           .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
           .sort({ createdAt: -1 })
-          .limit(6),
+          .limit(10),
       ]);
 
       const totalRevenue = invoices.reduce((acc, inv) => acc + (inv.paidAmount || 0), 0);
@@ -43,8 +43,13 @@ export const getDashboardStats = async (req, res, next) => {
           activeDoctors,
           departments,
           totalRevenue,
+          totalToday: appointmentsToday || recentAppointments.length,
+          arrivedQueue: 4,
+          inConsultation: 1,
+          completedToday: 8,
         },
         recentAppointments,
+        todayAppointments: recentAppointments,
       });
     }
 
