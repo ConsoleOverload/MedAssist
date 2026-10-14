@@ -8,6 +8,7 @@ import { Input } from '../../components/common/Input.jsx';
 import { Select } from '../../components/common/Select.jsx';
 import { Skeleton } from '../../components/common/Skeleton.jsx';
 import { UserPlus, Search, ShieldCheck, AlertCircle } from 'lucide-react';
+import { APP_ROLES, ROLE_LABELS } from '../../constants/roles.js';
 
 export const StaffManagement = () => {
   const [users, setUsers] = useState([]);
@@ -112,11 +113,11 @@ export const StaffManagement = () => {
   };
 
   const roleVariants = {
-    admin: 'navy',
-    doctor: 'teal',
     receptionist: 'blue',
+    doctor: 'teal',
+    patient: 'emerald',
     lab_technician: 'purple',
-    patient: 'slate',
+    admin: 'navy',
   };
 
   return (
@@ -155,11 +156,9 @@ export const StaffManagement = () => {
               className="text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="">All Roles</option>
-              <option value="admin">Administrator</option>
-              <option value="doctor">Doctor</option>
-              <option value="receptionist">Receptionist</option>
-              <option value="lab_technician">Lab Technician</option>
-              <option value="patient">Patient</option>
+              {APP_ROLES.map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -206,7 +205,7 @@ export const StaffManagement = () => {
                     </td>
                     <td className="py-3 px-4">
                       <Badge variant={roleVariants[u.role] || 'slate'}>
-                        {u.role?.replace('_', ' ')}
+                        {ROLE_LABELS[u.role] || u.role}
                       </Badge>
                     </td>
                     <td className="py-3 px-4 text-slate-600">{u.phone || 'N/A'}</td>
@@ -289,12 +288,10 @@ export const StaffManagement = () => {
               label="Account Role"
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
-              options={[
-                { value: 'doctor', label: 'Doctor (Physician)' },
-                { value: 'receptionist', label: 'Receptionist' },
-                { value: 'lab_technician', label: 'Lab Technician' },
-                { value: 'admin', label: 'Administrator' },
-              ]}
+              options={APP_ROLES.map((r) => ({
+                value: r.id,
+                label: r.label,
+              }))}
               required
             />
             <Input

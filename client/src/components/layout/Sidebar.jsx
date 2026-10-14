@@ -3,40 +3,19 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import clsx from 'clsx';
 
+import { APP_ROLES, ROLE_LABELS, ROLE_HOME_PATHS } from '../../constants/roles.js';
+
 export const Sidebar = ({ isCollapsed, toggleCollapsed, isMobileOpen, closeMobile }) => {
   const { user, login } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [roleSwitchOpen, setRoleSwitchOpen] = useState(false);
 
-  const roleLabels = {
-    admin: 'Administrator',
-    doctor: 'Attending Physician',
-    receptionist: 'Reception Desk',
-    lab_technician: 'Laboratory Specialist',
-    patient: 'Patient Portal',
-  };
-
-  const demoSwitchAccounts = [
-    { role: 'doctor', email: 'doctor@medassist.local', pass: 'DoctorPass123!', label: 'Attending Physician' },
-    { role: 'admin', email: 'admin@medassist.local', pass: 'AdminPass123!', label: 'Clinic Administrator' },
-    { role: 'receptionist', email: 'receptionist@medassist.local', pass: 'Receptionist' },
-    { role: 'lab_technician', email: 'labtech@medassist.local', pass: 'LabPass123!', label: 'Lab Technician' },
-    { role: 'patient', email: 'patient@medassist.local', pass: 'PatientPass123!', label: 'Patient Portal' },
-  ];
-
   const handleSwitchRole = async (acc) => {
     try {
-      await login(acc.email, acc.pass);
+      await login(acc.demoEmail, acc.demoPassword);
       setRoleSwitchOpen(false);
-      const roleHomeMap = {
-        admin: '/admin/dashboard',
-        doctor: '/doctor/dashboard',
-        receptionist: '/receptionist/dashboard',
-        lab_technician: '/lab/queue',
-        patient: '/patient/dashboard',
-      };
-      navigate(roleHomeMap[acc.role] || '/');
+      navigate(ROLE_HOME_PATHS[acc.id] || '/');
     } catch (err) {
       console.error(err);
     }
@@ -518,7 +497,7 @@ export const Sidebar = ({ isCollapsed, toggleCollapsed, isMobileOpen, closeMobil
                 <span className="material-symbols-outlined text-[16px]">sync_alt</span>
                 {!isCollapsed && (
                   <span className="text-xs font-medium truncate">
-                    Switch Role ({roleLabels[user?.role] || user?.role})
+                    Switch Role ({ROLE_LABELS[user?.role] || user?.role})
                   </span>
                 )}
               </div>
@@ -530,18 +509,18 @@ export const Sidebar = ({ isCollapsed, toggleCollapsed, isMobileOpen, closeMobil
                 <p className="px-2 py-1 text-[10px] font-bold text-outline-variant uppercase tracking-wider">
                   Select User Role
                 </p>
-                {demoSwitchAccounts.map((acc) => (
+                {APP_ROLES.map((acc) => (
                   <button
-                    key={acc.role}
+                    key={acc.id}
                     onClick={() => handleSwitchRole(acc)}
                     className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${
-                      user?.role === acc.role
-                        ? 'bg-primary-container text-on-primary font-semibold'
+                      user?.role === acc.id
+                        ? 'bg-primary text-on-primary font-semibold'
                         : 'text-outline-variant hover:text-surface-container-lowest hover:bg-surface-container-highest/10'
                     }`}
                   >
                     <span>{acc.label}</span>
-                    {user?.role === acc.role && <span className="text-[10px]">Active</span>}
+                    {user?.role === acc.id && <span className="text-[10px]">Active</span>}
                   </button>
                 ))}
               </div>

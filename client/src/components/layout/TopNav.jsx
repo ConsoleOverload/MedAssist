@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useNotifications } from '../../context/NotificationContext.jsx';
 import { useNavigate } from 'react-router-dom';
+import { ROLE_LABELS } from '../../constants/roles.js';
 
 export const TopNav = ({ openMobile, isSidebarCollapsed }) => {
   const { user, logout } = useAuth();
@@ -174,8 +175,8 @@ export const TopNav = ({ openMobile, isSidebarCollapsed }) => {
                 <span className="text-xs font-semibold text-on-surface leading-tight">
                   {user?.name || 'Dr. B.R.S. Chandrashekhar'}
                 </span>
-                <span className="hidden xl:inline text-[11px] text-outline leading-tight capitalize">
-                  {user?.role?.replace('_', ' ')} • Pulmonary Specialist
+                <span className="hidden xl:inline text-[11px] text-outline leading-tight">
+                  {ROLE_LABELS[user?.role] || user?.role}
                 </span>
               </div>
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-xs shadow-xs">

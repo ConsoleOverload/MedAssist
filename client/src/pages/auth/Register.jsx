@@ -7,6 +7,8 @@ import { Button } from '../../components/common/Button.jsx';
 import { Input } from '../../components/common/Input.jsx';
 import { Select } from '../../components/common/Select.jsx';
 
+import { APP_ROLES, ROLE_HOME_PATHS, ROLE_LABELS } from '../../constants/roles.js';
+
 export const Register = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -16,7 +18,7 @@ export const Register = () => {
     email: '',
     password: '',
     phone: '',
-    role: 'patient',
+    role: 'receptionist',
     dateOfBirth: '',
     gender: 'male',
   });
@@ -55,15 +57,7 @@ export const Register = () => {
       // Auto login after register
       const loggedUser = await login(form.email, form.password);
 
-      const roleHomePaths = {
-        admin: '/admin/dashboard',
-        doctor: '/doctor/dashboard',
-        receptionist: '/receptionist/dashboard',
-        lab_technician: '/lab/queue',
-        patient: '/patient/dashboard',
-      };
-
-      navigate(roleHomePaths[loggedUser?.role || form.role] || '/');
+      navigate(ROLE_HOME_PATHS[loggedUser?.role || form.role] || '/');
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -71,15 +65,7 @@ export const Register = () => {
     }
   };
 
-  const roleTitles = {
-    patient: { title: 'Create Patient Account', sub: 'Register for your personal MedAssist health portal' },
-    receptionist: { title: 'Create Receptionist Account', sub: 'Front desk intake, queue management & billing' },
-    doctor: { title: 'Create Doctor Account', sub: 'Physician portal for clinical notes & diagnostics' },
-    lab_technician: { title: 'Create Lab Technician Account', sub: 'Laboratory processing & diagnostic verifications' },
-    admin: { title: 'Create Administrator Account', sub: 'Full platform administration & governance' },
-  };
-
-  const currentRoleInfo = roleTitles[form.role] || roleTitles.patient;
+  const currentRoleInfo = APP_ROLES.find((r) => r.id === form.role) || APP_ROLES[0];
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -98,19 +84,13 @@ export const Register = () => {
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Select Role
             </label>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 p-1 bg-slate-100 rounded-xl">
-              {[
-                { id: 'patient', label: 'Patient' },
-                { id: 'receptionist', label: 'Reception' },
-                { id: 'doctor', label: 'Doctor' },
-                { id: 'lab_technician', label: 'Lab Tech' },
-                { id: 'admin', label: 'Admin' },
-              ].map((r) => (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 p-1 bg-slate-100 rounded-xl">
+              {APP_ROLES.map((r) => (
                 <button
                   key={r.id}
                   type="button"
                   onClick={() => handleRoleSelect(r.id)}
-                  className={`py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  className={`py-1.5 px-1 text-xs font-semibold rounded-lg transition-all text-center truncate ${
                     form.role === r.id
                       ? 'bg-teal-700 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -200,7 +180,7 @@ export const Register = () => {
             />
 
             <Button type="submit" variant="primary" size="lg" className="w-full mt-2" isLoading={loading}>
-              Register as {form.role.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+              Register as {ROLE_LABELS[form.role] || form.role}
             </Button>
           </form>
 

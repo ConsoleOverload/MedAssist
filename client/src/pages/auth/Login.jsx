@@ -5,6 +5,8 @@ import { Stethoscope, Lock, Mail, Shield, AlertCircle, ArrowRight } from 'lucide
 import { Button } from '../../components/common/Button.jsx';
 import { Input } from '../../components/common/Input.jsx';
 
+import { APP_ROLES, ROLE_HOME_PATHS } from '../../constants/roles.js';
+
 export const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -15,17 +17,9 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const demoAccounts = [
-    { label: 'Administrator', email: 'admin@medassist.local', pass: 'AdminPass123!', role: 'admin', color: 'bg-slate-900 text-white' },
-    { label: 'Attending Doctor', email: 'doctor@medassist.local', pass: 'DoctorPass123!', role: 'doctor', color: 'bg-teal-700 text-white' },
-    { label: 'Receptionist', email: 'receptionist@medassist.local', pass: 'ReceptPass123!', role: 'receptionist', color: 'bg-blue-700 text-white' },
-    { label: 'Lab Technician', email: 'labtech@medassist.local', pass: 'LabPass123!', role: 'lab_technician', color: 'bg-purple-700 text-white' },
-    { label: 'Patient Portal', email: 'patient@medassist.local', pass: 'PatientPass123!', role: 'patient', color: 'bg-emerald-700 text-white' },
-  ];
-
   const handleQuickFill = (acc) => {
-    setEmail(acc.email);
-    setPassword(acc.pass);
+    setEmail(acc.demoEmail);
+    setPassword(acc.demoPassword);
     setError('');
   };
 
@@ -42,16 +36,7 @@ export const Login = () => {
     try {
       const loggedUser = await login(email, password);
 
-      // Route to appropriate role dashboard
-      const roleHomePaths = {
-        admin: '/admin/dashboard',
-        doctor: '/doctor/dashboard',
-        receptionist: '/receptionist/dashboard',
-        lab_technician: '/lab/queue',
-        patient: '/patient/dashboard',
-      };
-
-      const destination = location.state?.from?.pathname || roleHomePaths[loggedUser.role] || '/';
+      const destination = location.state?.from?.pathname || ROLE_HOME_PATHS[loggedUser.role] || '/';
       navigate(destination, { replace: true });
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify credentials.');
@@ -80,9 +65,9 @@ export const Login = () => {
               One-Click Role Preview Accounts
             </span>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-              {demoAccounts.map((acc) => (
+              {APP_ROLES.map((acc) => (
                 <button
-                  key={acc.role}
+                  key={acc.id}
                   type="button"
                   onClick={() => handleQuickFill(acc)}
                   className={`text-[11px] font-medium py-1.5 px-2 rounded-lg transition-transform active:scale-95 text-center truncate ${acc.color}`}
