@@ -7,6 +7,58 @@ import { Skeleton } from '../../components/common/Skeleton.jsx';
 import { PrescriptionPrintModal } from '../../components/printables/PrescriptionPrintModal.jsx';
 import { Pill, Sparkles, Printer, AlertTriangle, ShieldCheck } from 'lucide-react';
 
+const renderMarkdownGuide = (text) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-2 text-xs leading-relaxed">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-0.5" />;
+
+        if (trimmed.startsWith('#')) {
+          const cleanHeading = trimmed.replace(/^#+\s*/, '');
+          return (
+            <h5 key={idx} className="font-bold text-xs text-primary pt-1">
+              {cleanHeading}
+            </h5>
+          );
+        }
+
+        const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed);
+        const content = trimmed.replace(/^[-*]\s*/, '').replace(/^\d+\.\s*/, '');
+
+        const parts = content.split(/(\*\*.*?\*\*)/g);
+        const formattedParts = parts.map((part, pIdx) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return (
+              <strong key={pIdx} className="font-bold text-on-surface">
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          return part;
+        });
+
+        if (isBullet) {
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-2">
+              <span className="text-primary font-bold">•</span>
+              <p className="flex-1 text-on-surface-variant">{formattedParts}</p>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="text-on-surface-variant">
+            {formattedParts}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
 export const PatientPrescriptions = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -137,8 +189,8 @@ export const PatientPrescriptions = () => {
                     <Sparkles className="w-4 h-4 text-primary" />
                     <span>Plain-Language Patient Guide</span>
                   </div>
-                  <div className="text-xs text-on-surface whitespace-pre-line leading-relaxed font-sans">
-                    {rx.plainLanguageExplanation.text}
+                  <div className="pt-1">
+                    {renderMarkdownGuide(rx.plainLanguageExplanation.text)}
                   </div>
                   <p className="text-[10px] text-outline pt-2 border-t border-primary/15 flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-primary" />

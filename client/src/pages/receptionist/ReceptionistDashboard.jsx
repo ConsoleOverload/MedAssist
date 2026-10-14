@@ -166,7 +166,7 @@ export const ReceptionistDashboard = () => {
               <option value="">-- Choose Doctor --</option>
               {doctors.map((d) => (
                 <option key={d._id} value={d._id}>
-                  Dr. {d.userId?.name || 'Physician'} ({d.departmentId?.name || 'Medicine'})
+                  {(d.userId?.name || 'Physician').startsWith('Dr.') ? (d.userId?.name || 'Physician') : `Dr. ${d.userId?.name || 'Physician'}`} ({d.departmentId?.name || 'Medicine'})
                 </option>
               ))}
             </select>

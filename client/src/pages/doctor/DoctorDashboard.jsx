@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { dashboardApi, appointmentApi } from '../../api/index.js';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const defaultFallbackAppointments = [
   {
@@ -12,7 +13,7 @@ const defaultFallbackAppointments = [
       _id: 'p-001',
       firstName: 'Ramesh',
       lastName: 'Rao',
-      mrn: 'YH-94821',
+      mrn: 'MA-94821',
       gender: 'male',
       dateOfBirth: '1964-04-12',
     },
@@ -27,7 +28,7 @@ const defaultFallbackAppointments = [
       _id: 'p-002',
       firstName: 'Priya',
       lastName: 'Sharma',
-      mrn: 'YH-88219',
+      mrn: 'MA-88219',
       gender: 'female',
       dateOfBirth: '1992-08-20',
     },
@@ -41,7 +42,7 @@ const defaultFallbackAppointments = [
       _id: 'p-003',
       firstName: 'David',
       lastName: 'Miller',
-      mrn: 'YH-76120',
+      mrn: 'MA-76120',
       gender: 'male',
       dateOfBirth: '1981-11-05',
     },
@@ -55,7 +56,7 @@ const defaultFallbackAppointments = [
       _id: 'p-004',
       firstName: 'Sunita',
       lastName: 'Reddy',
-      mrn: 'YH-55412',
+      mrn: 'MA-55412',
       gender: 'female',
       dateOfBirth: '1968-02-14',
     },
@@ -69,7 +70,7 @@ const defaultFallbackAppointments = [
       _id: 'p-005',
       firstName: 'Ananya',
       lastName: 'Sen',
-      mrn: 'YH-34901',
+      mrn: 'MA-34901',
       gender: 'female',
       dateOfBirth: '1974-06-18',
     },
@@ -83,7 +84,7 @@ const defaultFallbackAppointments = [
       _id: 'p-006',
       firstName: 'Vikram',
       lastName: 'Patel',
-      mrn: 'YH-22941',
+      mrn: 'MA-22941',
       gender: 'male',
       dateOfBirth: '1978-09-30',
     },
@@ -91,6 +92,7 @@ const defaultFallbackAppointments = [
 ];
 
 export const DoctorDashboard = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -118,6 +120,11 @@ export const DoctorDashboard = () => {
   // Use API appointments if available and non-empty, otherwise use default fallback appointments
   const apiAppointments = data?.todayAppointments || data?.recentAppointments || [];
   const appointmentsList = apiAppointments.length > 0 ? apiAppointments : defaultFallbackAppointments;
+
+  const totalToday = appointmentsList.length;
+  const completedToday = appointmentsList.filter((a) => a.status === 'completed').length;
+  const waitingCount = appointmentsList.filter((a) => a.status === 'arrived' || a.status === 'booked').length;
+  const inConsultCount = appointmentsList.filter((a) => a.status === 'in-consultation').length;
 
   // Find active in-consultation or next waiting patient
   const inConsultationPatient =
@@ -154,10 +161,10 @@ export const DoctorDashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">
-            Good morning, Dr. Chandrashekhar
+            Good morning, {user?.name || 'Doctor'}
           </h1>
           <p className="text-xs sm:text-sm text-outline mt-0.5">
-            Pulmonary Medicine & Sleep Clinic • 4 patients remaining in morning session
+            {user?.doctorProfile?.specialties?.[0] || 'Internal Medicine'} • {waitingCount} patient{waitingCount === 1 ? '' : 's'} waiting for consultation
           </p>
         </div>
 
@@ -178,10 +185,10 @@ export const DoctorDashboard = () => {
             </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-2xl font-bold text-primary">
-                {kpis.totalToday || 14}
+                {totalToday}
               </span>
               <span className="text-xs text-outline font-medium">
-                (8 completed)
+                ({completedToday} completed)
               </span>
             </div>
           </div>
@@ -198,10 +205,10 @@ export const DoctorDashboard = () => {
             </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-2xl font-bold text-on-surface">
-                {kpis.arrivedQueue || 4}
+                {waitingCount}
               </span>
               <span className="text-xs text-outline font-medium">
-                Avg wait ~12m
+                {waitingCount > 0 ? 'Ready for consult' : 'Lobby clear'}
               </span>
             </div>
           </div>
@@ -214,19 +221,19 @@ export const DoctorDashboard = () => {
         <div className="bg-surface-container-lowest rounded-xl p-4 border border-surface-container shadow-xs flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold text-outline uppercase tracking-wider">
-              Pending Sign-off
+              Active in Exam Room
             </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-2xl font-bold text-on-surface">
-                {Object.values(signedReports).filter(Boolean).length === 2 ? 0 : 2}
+                {inConsultCount}
               </span>
               <span className="text-xs text-outline font-medium">
-                Diagnostic reports
+                In-consultation visits
               </span>
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
-            <span className="material-symbols-outlined text-[20px]">draw</span>
+            <span className="material-symbols-outlined text-[20px]">stethoscope</span>
           </div>
         </div>
       </div>
@@ -267,12 +274,12 @@ export const DoctorDashboard = () => {
                         {inConsultationPatient.patientId?.lastName}
                       </h3>
                       <span className="text-xs text-outline">
-                        62M • #{inConsultationPatient.patientId?.mrn || 'YH-94821'}
+                        {inConsultationPatient.patientId?.gender ? `${inConsultationPatient.patientId.gender} • ` : ''}#{inConsultationPatient.patientId?.mrn || 'MRN-PENDING'}
                       </span>
                     </div>
                     <p className="text-xs text-on-surface-variant mt-0.5">
                       <strong className="font-medium text-on-surface">Reason:</strong>{' '}
-                      {inConsultationPatient.reason || 'COPD Follow-up & Persistent Cough'}
+                      {inConsultationPatient.reason || 'Primary Care Consultation'}
                     </p>
                   </div>
                 </div>
@@ -281,7 +288,11 @@ export const DoctorDashboard = () => {
                 <div className="sm:text-right">
                   <span className="inline-flex items-center gap-1 text-[11px] text-on-surface-variant bg-surface-container-low px-2.5 py-1 rounded-md border border-surface-container">
                     <span className="material-symbols-outlined text-[13px] text-outline">info</span>
-                    <span>Allergy: Aspirin / NSAIDs</span>
+                    <span>
+                      {inConsultationPatient.patientId?.allergies?.length > 0
+                        ? `Allergies: ${inConsultationPatient.patientId.allergies.join(', ')}`
+                        : 'No Known Drug Allergies (NKDA)'}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -335,14 +346,14 @@ export const DoctorDashboard = () => {
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 className="font-bold text-sm text-on-surface">Patient Queue</h3>
-                <p className="text-xs text-outline">Morning Session • Yashoda Somajiguda OPD</p>
+                <p className="text-xs text-outline">Live Outpatient Schedule • Clinical OPD</p>
               </div>
 
               {/* Clean Filter Tabs */}
               <div className="bg-surface-container-low rounded-lg p-1 flex items-center gap-1 text-xs">
                 {[
                   { id: 'all', label: `All (${appointmentsList.length})` },
-                  { id: 'waiting', label: `Waiting (${appointmentsList.filter(a => a.status === 'arrived').length || 4})` },
+                  { id: 'waiting', label: `Waiting (${appointmentsList.filter(a => a.status === 'arrived').length})` },
                   { id: 'in-exam', label: 'In Room' },
                   { id: 'completed', label: 'Done' },
                 ].map((tab) => (
@@ -394,7 +405,7 @@ export const DoctorDashboard = () => {
                               {p.firstName} {p.lastName}
                             </span>
                             <span className="text-[11px] text-outline font-mono">
-                              #{p.mrn || 'YH-94821'}
+                              #{p.mrn || 'MA-10021'}
                             </span>
                           </div>
                         </td>
@@ -452,16 +463,24 @@ export const DoctorDashboard = () => {
             </div>
 
             <p className="text-xs text-on-surface-variant leading-relaxed">
-              <strong className="text-on-surface">Next: Ramesh Rao (62M)</strong> — Spirometry shows mild airway obstruction with +14% reversibility. Maintenance inhaler adherence is good.
+              <strong className="text-on-surface">
+                {inConsultationPatient?.patientId?.firstName
+                  ? `${inConsultationPatient.patientId.firstName} ${inConsultationPatient.patientId.lastName}`
+                  : 'Patient Queue'}
+              </strong>{' '}
+              —{' '}
+              {inConsultationPatient?.reason
+                ? `Chief complaint: ${inConsultationPatient.reason}. Medical profile and active orders verified.`
+                : 'All waiting patients attended. Ready for new clinical evaluations.'}
             </p>
 
             <div className="pt-2 border-t border-surface-container flex items-center justify-between">
-              <span className="text-xs text-outline">3 SOS uses reported this week</span>
+              <span className="text-xs text-outline">Clinical Decision Support Active</span>
               <button
                 onClick={() => setShowFullAiModal(!showFullAiModal)}
                 className="text-xs text-primary font-semibold hover:underline"
               >
-                {showFullAiModal ? 'Hide Details' : 'View Details'}
+                {showFullAiModal ? 'Hide Guidance' : 'View Guidance'}
               </button>
             </div>
 
@@ -493,12 +512,12 @@ export const DoctorDashboard = () => {
             {/* Item 1 */}
             <div className="p-3 rounded-lg bg-surface-container-low border border-surface-container flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs text-on-surface">Ananya Sen (52F)</span>
+                <span className="font-semibold text-xs text-on-surface">Arthur Pendelton (62M)</span>
                 <span className="text-[10px] text-outline">10:15 AM</span>
               </div>
-              <p className="text-xs text-on-surface-variant">Arterial Blood Gas (ABG) Lab Panel</p>
+              <p className="text-xs text-on-surface-variant">Comprehensive Metabolic Panel (CMP)</p>
               <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-primary font-medium">Normal pH (7.40)</span>
+                <span className="text-[11px] text-primary font-medium">eGFR: 88 mL/min (Normal)</span>
                 <button
                   onClick={() => handleQuickSign('abg')}
                   className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
@@ -515,12 +534,12 @@ export const DoctorDashboard = () => {
             {/* Item 2 */}
             <div className="p-3 rounded-lg bg-surface-container-low border border-surface-container flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-xs text-on-surface">Vikram Patel (48M)</span>
+                <span className="font-semibold text-xs text-on-surface">Clara Oswald (32F)</span>
                 <span className="text-[10px] text-outline">09:30 AM</span>
               </div>
-              <p className="text-xs text-on-surface-variant">Overnight Sleep Study (PSG)</p>
+              <p className="text-xs text-on-surface-variant">Lipid Cardiovascular Profile</p>
               <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-outline">AHI: 24 (Moderate OSA)</span>
+                <span className="text-[11px] text-primary font-medium">HDL: 54 mg/dL (Optimal)</span>
                 <button
                   onClick={() => handleQuickSign('psg')}
                   className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${

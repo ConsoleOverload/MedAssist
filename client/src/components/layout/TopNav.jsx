@@ -65,10 +65,10 @@ export const TopNav = ({ openMobile, isSidebarCollapsed }) => {
             <span className="material-symbols-outlined text-primary text-[20px]">domain</span>
             <div className="flex flex-col">
               <span className="font-semibold text-xs text-on-surface leading-tight group-hover:text-primary transition-colors">
-                Yashoda Hospitals • Somajiguda
+                MedAssist Health Network • Main OPD
               </span>
               <span className="hidden xl:inline text-[11px] text-outline leading-tight">
-                Pulmonary Medicine &amp; Sleep Disorders
+                Comprehensive Primary Care &amp; Clinical Center
               </span>
             </div>
             <span className="material-symbols-outlined text-outline text-[16px]">unfold_more</span>
@@ -173,7 +173,7 @@ export const TopNav = ({ openMobile, isSidebarCollapsed }) => {
             >
               <div className="flex flex-col text-right hidden sm:flex">
                 <span className="text-xs font-semibold text-on-surface leading-tight">
-                  {user?.name || 'Dr. B.R.S. Chandrashekhar'}
+                  {user?.name || 'Clinical User'}
                 </span>
                 <span className="hidden xl:inline text-[11px] text-outline leading-tight">
                   {ROLE_LABELS[user?.role] || user?.role}
